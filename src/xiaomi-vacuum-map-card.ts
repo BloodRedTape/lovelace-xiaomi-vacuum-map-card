@@ -84,6 +84,13 @@ import { DropdownMenu } from "./components/dropdown-menu";
 import { TilesWrapper } from "./components/tiles-wrapper";
 import { IconsWrapper } from "./components/icons-wrapper";
 import { PresetSelector } from "./components/preset-selector";
+import { HassEntity } from "home-assistant-js-websocket";
+import { CleanPath, CleanPathPoint } from "./model/map_objects/clean-path";
+import { Vacuum } from "./model/map_objects/vacuum";
+import { Charger } from "./model/map_objects/charger";
+import { NoGoZone } from "./model/map_objects/no-go-zone";
+import { VirtualWall } from "./model/map_objects/virtual-wall";
+import { CleanZone } from "./model/map_objects/clean-zone";
 
 const line1 = "   XIAOMI-VACUUM-MAP-CARD";
 const line2 = `   ${localize("common.version")} ${CARD_VERSION}`;
@@ -118,6 +125,7 @@ export class XiaomiVacuumMapCard extends LitElement {
     @state() public repeats = 1;
     @state() private selectedMode = 0;
     @state() private mapLocked = false;
+    @state() private drawMapEntitiesFromCameraAttributes = false;
     @state() private configErrors: string[] = [];
     @state() private connected = false;
     @state() public internalVariables = {};
@@ -187,6 +195,18 @@ export class XiaomiVacuumMapCard extends LitElement {
             entity: vacuums[0],
             vacuum_platform: PlatformGenerator.XIAOMI_MIIO_PLATFORM,
         };
+    }
+
+    public static getCameraEntity(hass: HomeAssistantFixed): HassEntity | undefined{
+        const entities = Object.keys(hass.states);
+        const entity = entities
+            .filter(e => e.substr(0, e.indexOf(".")) === "camera")
+            .map(e => hass?.states[e]);
+
+        if (entity.length === 0)
+            return undefined;
+
+        return entity[0];
     }
 
     public setConfig(config: XiaomiVacuumMapCardConfig): void {
@@ -289,6 +309,16 @@ export class XiaomiVacuumMapCard extends LitElement {
                     class="${this.mapScale * this.realScale > 1 ? "zoomed" : ""}"
                     src="${mapSrc}"
                     @load="${() => this._calculateBasicScale()}" />
+                <div id="map-image-overlay">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        version="2.0"
+                        id="svg-wrapper"
+                        width="100%"
+                        height="100%">
+                        ${this.drawMapEntitiesFromCameraAttributes ? this._drawMapEntitiesFromCameraAttributes() : null}
+                    </svg>
+                </div>
                 <div id="map-image-overlay">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -516,6 +546,7 @@ export class XiaomiVacuumMapCard extends LitElement {
             forwardHaptic("selection");
         }
         this.mapLocked = config?.map_locked ?? false;
+        this.drawMapEntitiesFromCameraAttributes = config?.draw_map_entities_from_camera_attributes ?? false;
         this.selectedMode = 0;
         this.realScale = 1;
         this.mapScale = 1;
@@ -1068,6 +1099,59 @@ export class XiaomiVacuumMapCard extends LitElement {
         }
     }
 
+    private _drawMapEntitiesFromCameraAttributes(): SVGTemplateResult | null {
+        const camera = XiaomiVacuumMapCard.getCameraEntity(this.hass);
+
+        const vacuum_position_attributes = camera?.attributes['vacuum_position'];
+
+        const vacuum = new Vacuum(vacuum_position_attributes['x'], vacuum_position_attributes['y'], vacuum_position_attributes['a'], this._getContext())
+
+        const charger_position_attributes = camera?.attributes['charger'];
+
+        const charger = new Charger(charger_position_attributes['x'], charger_position_attributes['y'], this._getContext());
+
+        const paths_attribute = camera?.attributes['path']['path'];
+
+        const no_go_attribute = camera?.attributes['no_go_areas'];
+
+        const no_go_zones = no_go_attribute?.map(area => {
+            return new NoGoZone(
+                area['x0'],
+                area['y0'],
+                area['x1'],
+                area['y1'],
+                area['x2'],
+                area['y2'],
+                area['x3'],
+                area['y3'],
+                this._getContext()
+            );
+        });
+
+        const virtual_walls_attribute = camera?.attributes['walls'];
+
+        const virtual_walls = virtual_walls_attribute?.map(wall => new VirtualWall(wall['x0'], wall['y0'], wall['x1'], wall['y1'], this._getContext()));
+
+        const paths = paths_attribute?.map((path) => new CleanPath(
+            path.map((point) => new CleanPathPoint(point['x'], point['y'])),
+            this._getContext()
+        ));
+
+        const zones_attribute = camera?.attributes['zones'];
+
+        const clean_zones = zones_attribute?.map(zone => {
+            return new CleanZone(
+                zone['x0'],
+                zone['y0'],
+                zone['x1'],
+                zone['y1'],
+                this._getContext()
+            );
+        });
+
+        return svg`${clean_zones?.map(z => z.render())} ${paths?.map(p => p.render())} ${no_go_zones?.map(n => n.render())} ${virtual_walls?.map(w => w.render())} ${charger.render()} ${vacuum.render()}`;
+    }
+
     private _toggleLock(): void {
         this.mapLocked = !this.mapLocked;
         forwardHaptic("selection");
@@ -1372,8 +1456,12 @@ export class XiaomiVacuumMapCard extends LitElement {
                     transparent
                 );
                 --map-card-internal-manual-path-point-line-width: var(--map-card-manual-path-point-line-width, 1px);
-                --map-card-internal-manual-path-line-color: var(--map-card-manual-path-line-color, yellow);
+                --map-card-internal-manual-path-line-color: var(--map-card-manual-path-line-color, white);
                 --map-card-internal-manual-path-line-width: var(--map-card-manual-path-line-width, 1px);
+
+                --map-card-internal-clean-path-line-color: var(--map-card-clean-path-line-color, white);
+                --map-card-internal-clean-path-line-width: var(--map-card-clean-path-line-width, 1px);
+
                 --map-card-internal-predefined-rectangle-line-width: var(
                     --map-card-predefined-rectangle-line-width,
                     1px
@@ -1751,6 +1839,7 @@ export class XiaomiVacuumMapCard extends LitElement {
             ${ManualRectangle.styles}
             ${PredefinedMultiRectangle.styles}
             ${ManualPath.styles}
+            ${CleanPath.styles}
             ${ManualPoint.styles}
             ${PredefinedPoint.styles}
             ${Room.styles}

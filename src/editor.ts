@@ -57,6 +57,10 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
         return this._config?.map_locked || false;
     }
 
+    get _draw_map_entities_from_camera_attributes(): boolean {
+        return this._config?.draw_map_entities_from_camera_attributes || false;
+    }
+
     get _two_finger_pan(): boolean {
         return this._config?.two_finger_pan || false;
     }
@@ -192,6 +196,14 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
                         <ha-switch
                             .checked="${this._map_locked}"
                             .configValue="${"map_locked"}"
+                            @change="${this._valueChanged}"></ha-switch>
+                    </ha-formfield>
+                </div>
+                <div class="values">
+                    <ha-formfield class="switch-wrapper" .label="${this._localize("editor.label.draw_map_entities_from_camera_attributes")}">
+                        <ha-switch
+                            .checked="${this._draw_map_entities_from_camera_attributes}"
+                            .configValue="${"draw_map_entities_from_camera_attributes"}"
                             @change="${this._valueChanged}"></ha-switch>
                     </ha-formfield>
                 </div>
@@ -426,7 +438,7 @@ export class XiaomiVacuumMapCardEditor extends LitElement implements Omit<Lovela
                 border-top: solid 1px;
                 border-top-color: var(--primary-text-color);
             }
-          
+
             .version {
                 position: absolute;
                 bottom: 0;

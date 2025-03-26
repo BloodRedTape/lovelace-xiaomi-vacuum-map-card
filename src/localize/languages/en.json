@@ -250,6 +250,7 @@
             "camera": "Camera entity (required)",
             "vacuum_platform": "Vacuum platform (required)",
             "map_locked": "Map locked (optional)",
+            "draw_map_entities_from_camera_attributes": "Draw Map Entities From Camera Attributes (optional)",
             "two_finger_pan": "Two finger pan (optional)",
             "platforms_documentation": "Chosen platform's documentation ({0})",
             "selection": "Selection:",
