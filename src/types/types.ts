@@ -9,6 +9,7 @@ import { ACTION_HANDLER_CUSTOM_ELEMENT_NAME, CARD_CUSTOM_ELEMENT_NAME, EDITOR_CU
 import { XiaomiVacuumMapCardActionHandler } from "../action-handler-directive";
 import { XiaomiVacuumMapCard } from "../xiaomi-vacuum-map-card";
 import { Tile } from "../components/tile";
+import { FurnitureConfig, FurnitureTypeConfig } from "../model/map_objects/furniture";
 
 declare global {
     interface HTMLElementTagNameMap {
@@ -51,6 +52,8 @@ export interface XiaomiVacuumMapCardConfig extends LovelaceCardConfig, CardPrese
     readonly language?: Language;
     readonly debug?: boolean;
     readonly action_handler_id?: string;
+    readonly furniture?: FurnitureConfig[];
+    readonly furniture_types?: FurnitureTypeConfig[];
 }
 
 export interface CardPresetConfig extends ConditionalObjectConfig {

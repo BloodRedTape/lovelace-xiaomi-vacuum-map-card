@@ -5,6 +5,7 @@ import { PredefinedPoint } from "./predefined-point";
 import { ManualRectangle } from "./manual-rectangle";
 import { CoordinatesConverter } from "./coordinates-converter";
 import { TranslatableString } from "../../types/types";
+import { Furniture } from "./furniture";
 
 export class Context {
     constructor(
@@ -14,6 +15,8 @@ export class Context {
         public readonly update: () => void,
         public readonly selectionChanged: () => void,
         public readonly coordinatesConverter: () => CoordinatesConverter | undefined,
+        public readonly furniture: () => Furniture[],
+        public readonly furnitureEditMode: () => boolean,
         public readonly selectedManualRectangles: () => ManualRectangle[],
         public readonly selectedPredefinedRectangles: () => PredefinedMultiRectangle[],
         public readonly selectedRooms: () => Room[],

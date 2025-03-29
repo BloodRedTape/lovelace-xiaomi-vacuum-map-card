@@ -12,8 +12,9 @@ export class Vacuum extends MapObject {
     public render(): SVGTemplateResult {
         const [x, y] = this.vacuumToScaledMap(this.x, this.y);
         const rotation = this.a;
-        const radius = 7;
+        const radius = 6;
         const fill = "white";
+
 
         return svg`
             <circle
